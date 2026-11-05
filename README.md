@@ -53,4 +53,4 @@ npm run build
 npm run build:dll
 ```
 
-该命令会调用 `server/build.ps1` 脚本，在 `server` 目录下生成 `smtweb.dll`。
+该命令会调用 `server/build.ps1` 脚本，在 `server/bin` 目录下生成 `smtweb.dll` 和 `smtweb.plugin.json`。

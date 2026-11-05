@@ -31,8 +31,6 @@ declare module 'vue' {
     VanCheckbox: typeof import('vant/es')['Checkbox']
     VanConfigProvider: typeof import('vant/es')['ConfigProvider']
     VanPopup: typeof import('vant/es')['Popup']
-    VanSlider: typeof import('vant/es')['Slider']
-    VanStepper: typeof import('vant/es')['Stepper']
     VanSwitch: typeof import('vant/es')['Switch']
   }
 }

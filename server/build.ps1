@@ -91,6 +91,7 @@ Write-Host '> rc + cl (x64)'
 if ($LASTEXITCODE -ne 0) { throw "native build failed: $LASTEXITCODE" }
 
 Copy-Item -Path (Join-Path $workDir 'smtweb.dll') -Destination $outFile -Force
+Copy-Item -Path (Join-Path $serverDir 'smtweb.plugin.json') -Destination $OutDir -Force
 $legacy = Join-Path $OutDir 'SmtWebServer.dll'
 if (Test-Path $legacy) { Remove-Item $legacy -Force }
 Remove-Item $workDir -Recurse -Force
