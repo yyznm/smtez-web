@@ -1,40 +1,21 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import CameraGrid from '@/components/CameraGrid.vue'
 import ProgressRing from '@/components/ProgressRing.vue'
 import SpeedChart from '@/components/SpeedChart.vue'
-import { LAYOUT_CAPACITY, useOverviewStore } from '@/stores/overview'
-import type { GridLayout } from '@/types'
+import { useOverviewStore } from '@/stores/overview'
 
 const overview = useOverviewStore()
 
-const LAYOUTS = Object.keys(LAYOUT_CAPACITY) as GridLayout[]
-
 const KPIS = computed(() => [
-  { id: 'speed', label: '速度', value: overview.stats.speed.toFixed(2), unit: 'mm/s' },
+  { id: 'speed', label: '速度', value: String(overview.stats.speed), unit: '点/时' },
   { id: 'reject', label: '抛料', value: String(overview.stats.reject), unit: '次' },
   { id: 'placed', label: '已贴装', value: String(overview.stats.placed), unit: '点' },
   { id: 'target', label: '计划', value: String(overview.stats.total), unit: '点' },
 ])
-
-function setCount(value: boolean | number | string) {
-  overview.setCount(Number(value))
-}
-
-function setZoom(value: number | number[]) {
-  overview.grid.zoom = Array.isArray(value) ? value[0] : value
-}
 </script>
 
 <template>
   <div class="page">
-    <header class="topbar">
-      <span class="dot is-run" />
-      <span class="topbar-title">总览</span>
-      <span class="topbar-spacer" />
-      <span class="chip is-ok">实时</span>
-    </header>
-
     <div class="page-body">
       <div class="kpi">
         <ProgressRing :value="overview.progress" />
@@ -52,64 +33,12 @@ function setZoom(value: number | number[]) {
           <span class="panel-sub">近 120s</span>
           <span class="topbar-spacer" />
           <span class="legend">
-            <i class="legend-dot" style="background: #3ddc97" />进度
-            <i class="legend-dot" style="background: #4c9aff" />速度
-            <i class="legend-dot" style="background: #ff5b5f" />抛料
+            <i class="legend-dot is-progress" />进度
+            <i class="legend-dot is-speed" />速度
+            <i class="legend-dot is-reject" />抛料
           </span>
         </div>
         <SpeedChart :samples="overview.samples" />
-      </section>
-
-      <section class="panel grid-panel">
-        <div class="panel-head">
-          <span class="panel-title">相机</span>
-          <span class="panel-sub">{{ overview.tileCount }} 路</span>
-        </div>
-
-        <div class="controls">
-          <div class="ctl">
-            <span class="ctl-label">数量</span>
-            <van-stepper
-              :model-value="overview.count"
-              :min="1"
-              :max="9"
-              input-width="34px"
-              button-size="24px"
-              @update:model-value="setCount($event)"
-            />
-          </div>
-
-          <div class="ctl">
-            <span class="ctl-label">布局</span>
-            <div class="seg">
-              <button
-                v-for="layout in LAYOUTS"
-                :key="layout"
-                class="seg-item"
-                :class="{ 'is-active': layout === overview.grid.layout }"
-                @click="overview.grid.layout = layout"
-              >
-                {{ layout }}
-              </button>
-            </div>
-          </div>
-
-          <div class="ctl ctl-zoom">
-            <span class="ctl-label">缩放</span>
-            <van-slider
-              :model-value="overview.grid.zoom"
-              :min="40"
-              :max="200"
-              bar-height="4px"
-              @update:model-value="setZoom($event)"
-            />
-            <span class="ctl-value num">{{ overview.grid.zoom }}%</span>
-          </div>
-        </div>
-
-        <div class="grid-wrap">
-          <CameraGrid />
-        </div>
       </section>
     </div>
   </div>
@@ -177,59 +106,15 @@ function setZoom(value: number | number[]) {
   margin-left: 4px;
 }
 
-.grid-panel {
-  padding-bottom: 12px;
+.legend-dot.is-progress {
+  background: var(--accent);
 }
 
-.controls {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 12px;
+.legend-dot.is-speed {
+  background: var(--info);
 }
 
-.ctl {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.ctl-label {
-  width: 32px;
-  flex: none;
-  font-size: 12px;
-  color: var(--text-3);
-}
-
-.ctl .seg {
-  flex: 1;
-  min-width: 0;
-}
-
-.ctl-zoom :deep(.van-slider) {
-  flex: 1;
-  min-width: 0;
-}
-
-.ctl-value {
-  width: 44px;
-  flex: none;
-  text-align: right;
-  font-size: 12px;
-  color: var(--text-2);
-}
-
-.controls :deep(.van-stepper__input) {
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--text);
-  background: var(--surface-2);
-}
-
-.grid-wrap {
-  padding: 0 12px;
-  padding-top: 4px;
-  border-top: 1px solid var(--line);
-  padding-top: 12px;
+.legend-dot.is-reject {
+  background: var(--danger);
 }
 </style>

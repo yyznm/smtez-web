@@ -9,12 +9,12 @@ export type GridLayout = '1x1' | '2x2' | '3x3'
 
 /** 总览曲线采样点 */
 export interface SpeedSample {
-  /** 时间（秒） */
+  /** 时间（秒，以本次贴片开始为 0） */
   t: number
   /** 进度 % */
   progress: number
-  /** 速度 mm/s */
+  /** 速度（点/小时） */
   speed: number
-  /** 抛料次数 */
+  /** 本秒抛料次数 */
   reject: number
 }

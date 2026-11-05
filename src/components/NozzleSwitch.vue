@@ -67,8 +67,8 @@ const emit = defineEmits<{ 'update:modelValue': [value: number] }>()
 
 .nozzle.is-active {
   color: var(--text);
-  background: var(--surface-3);
-  border-color: var(--line-2);
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
 }
 
 .nozzle.is-active .nozzle-bore {

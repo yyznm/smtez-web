@@ -96,6 +96,8 @@ function onRowTap(part: PartView) {
                 </span>
               </div>
             </div>
+
+            <button class="calib-btn" @click="machine.fiducialCheck(placement.activeIndex)">校准</button>
           </div>
 
           <ul class="board-list">
@@ -108,7 +110,7 @@ function onRowTap(part: PartView) {
             >
               <van-switch
                 :model-value="board.enable"
-                size="22"
+                size="18"
                 @click.stop
                 @update:model-value="toggleBoard(board.index, $event)"
               />
@@ -122,10 +124,6 @@ function onRowTap(part: PartView) {
                   </span>
                 </div>
               </div>
-              <span v-if="board.index === placement.activeIndex" class="board-mark">
-                <AppIcon name="check" :size="16" />
-              </span>
-              <button class="text-btn" @click.stop="machine.fiducialCheck(board.index)">校准</button>
             </li>
             <li v-if="!placement.boards.length" class="list-empty">数据库中没有板数据</li>
           </ul>
@@ -198,6 +196,7 @@ function onRowTap(part: PartView) {
                 <span class="chip" :class="part.kind === 'mark' ? 'is-warn' : 'is-info'">
                   {{ part.kind === 'mark' ? '基准' : '贴装' }}
                 </span>
+                <span v-if="part.done" class="chip is-ok">已完成</span>
                 <span class="comp-part">{{ part.value }}</span>
               </div>
               <div class="comp-line comp-params">
@@ -265,7 +264,7 @@ function onRowTap(part: PartView) {
 }
 
 .panel-cell.is-active {
-  background: linear-gradient(150deg, #2f9e63, #1c7048);
+  background: linear-gradient(150deg, var(--accent), var(--accent-deep));
 }
 
 .panel-cell.is-empty {
@@ -334,8 +333,8 @@ function onRowTap(part: PartView) {
 .board {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 11px 12px;
+  gap: 8px;
+  padding: 8px 10px;
   border-bottom: 1px solid var(--line);
   transition: background 0.15s;
 }
@@ -354,11 +353,11 @@ function onRowTap(part: PartView) {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 3px;
 }
 
 .board-name {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -372,12 +371,30 @@ function onRowTap(part: PartView) {
 
 .board-meta {
   display: flex;
-  gap: 6px;
+  gap: 5px;
 }
 
-.board-mark {
-  color: var(--accent);
+.board-meta .chip {
+  height: 17px;
+  padding: 0 5px;
+  font-size: 10px;
+}
+
+/* 校准当前选中的板 */
+.calib-btn {
   flex: none;
+  width: 100%;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 11px;
+}
+
+.calib-btn:active {
+  color: var(--accent);
+  border-color: var(--accent-line);
 }
 
 /* ---------- 元件 ---------- */
@@ -410,7 +427,7 @@ function onRowTap(part: PartView) {
 
 .text-btn:active {
   color: var(--accent);
-  border-color: rgba(255, 176, 32, 0.35);
+  border-color: var(--accent-line);
 }
 
 .mode-btn {
@@ -431,7 +448,7 @@ function onRowTap(part: PartView) {
 .mode-btn.is-active {
   color: var(--accent);
   background: var(--accent-soft);
-  border-color: rgba(255, 176, 32, 0.32);
+  border-color: var(--accent-line);
 }
 
 .search {

@@ -57,8 +57,8 @@ watch(() => props.frame, draw, { immediate: true })
     <div v-if="!hasFrame && error && !compact" class="camera-empty">
       <span class="camera-error">{{ error }}</span>
     </div>
-    <!-- 画面中心十字标记 -->
-    <div v-if="hasFrame" class="camera-cross" aria-hidden="true">
+    <!-- 画面中心十字标记（宫格小图不画，避免噪声） -->
+    <div v-if="hasFrame && !compact" class="camera-cross" aria-hidden="true">
       <span class="cross-line cross-h" />
       <span class="cross-line cross-v" />
     </div>
@@ -81,7 +81,7 @@ watch(() => props.frame, draw, { immediate: true })
   aspect-ratio: 16 / 9;
   border-radius: var(--r-md);
   overflow: hidden;
-  background: #05070a;
+  background: #050506;
   border: 1px solid var(--line);
   max-height: 40vh;
 }
@@ -143,19 +143,19 @@ watch(() => props.frame, draw, { immediate: true })
   height: 30px;
   border-radius: 50%;
   border: 1px solid var(--line-2);
-  background: rgba(6, 9, 13, 0.55);
+  background: rgba(5, 5, 6, 0.55);
   color: var(--text-2);
   transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 
 .camera-light.is-on {
   color: var(--accent);
-  border-color: rgba(255, 176, 32, 0.4);
-  background: rgba(6, 9, 13, 0.65);
+  border-color: var(--accent-line);
+  background: rgba(5, 5, 6, 0.65);
 }
 
 .camera-light:active {
-  background: rgba(6, 9, 13, 0.8);
+  background: rgba(5, 5, 6, 0.8);
 }
 
 .camera-error {

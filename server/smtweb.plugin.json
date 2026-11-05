@@ -1,0 +1,7 @@
+{
+      "name": "网页控制-手机",
+      "description": "在局域网内使用手机浏览器控制贴片机",
+      "uid": 3001,
+      "path": "./plugins/smtweb.dll",
+      "type": "externdll"
+}

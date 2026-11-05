@@ -41,7 +41,7 @@ export class WsClient {
     return this.#socket?.readyState === WebSocket.OPEN
   }
 
-  connect(url: string): void {
+  connect(url: string, isRetry = false): void {
     const target = url.trim()
     if (!target) return
     if (this.#socket && this.#url === target && this.#detail.status !== 'closed') return
@@ -49,6 +49,8 @@ export class WsClient {
     this.closeSocket()
     this.#url = target
     this.#manualClose = false
+    // 手动发起的连接视为新一轮尝试，重试计数与指数退避重新开始
+    if (!isRetry) this.#retries = 0
     this.#emitStatus('connecting')
 
     try {
@@ -157,7 +159,7 @@ export class WsClient {
     const delay = Math.min(1000 * 2 ** this.#retries, MAX_DELAY)
     this.#retries += 1
     this.#detail = { ...this.#detail, retries: this.#retries }
-    this.#timer = window.setTimeout(() => this.connect(this.#url), delay)
+    this.#timer = window.setTimeout(() => this.connect(this.#url, true), delay)
   }
 
   #emitStatus(status: WsStatus, error?: string): void {

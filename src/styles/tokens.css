@@ -1,36 +1,38 @@
 :root {
   color-scheme: dark;
 
-  /* 表面层级：深色工业控制台 */
-  --bg: #0a0d12;
-  --bg-2: #0f141b;
-  --surface: #141b25;
-  --surface-2: #1a222d;
-  --surface-3: #212b38;
+  /* 表面层级：中性黑（夜间） */
+  --bg: #08080a;
+  --bg-2: #0e0e11;
+  --surface: #141418;
+  --surface-2: #1b1b20;
+  --surface-3: #232329;
 
   /* 描边 */
-  --line: #253040;
-  --line-2: #33415a;
+  --line: #26262d;
+  --line-2: #35353e;
 
   /* 文本 */
-  --text: #e8eef7;
-  --text-2: #94a2b5;
-  --text-3: #62728a;
+  --text: #eceff3;
+  --text-2: #9aa1ad;
+  --text-3: #666d7a;
 
-  /* 唯一强调色 */
-  --accent: #ffb020;
-  --accent-soft: rgba(255, 176, 32, 0.14);
-  --accent-ink: #1b1204;
+  /* 强调色：只用在需要突出的元素上 */
+  --accent: #1fbf72;
+  --accent-deep: #0f8a52;
+  --accent-soft: rgba(31, 191, 114, 0.14);
+  --accent-line: rgba(31, 191, 114, 0.34);
+  --accent-ink: #04160c;
 
   /* 状态语义色 */
   --ok: #3ddc97;
   --ok-soft: rgba(61, 220, 151, 0.14);
   --info: #4c9aff;
   --info-soft: rgba(76, 154, 255, 0.14);
+  --warn: #ffb020;
+  --warn-soft: rgba(255, 176, 32, 0.14);
   --danger: #ff5b5f;
   --danger-soft: rgba(255, 91, 95, 0.14);
-  --warn: var(--accent);
-  --warn-soft: var(--accent-soft);
 
   /* 圆角 */
   --r-sm: 8px;

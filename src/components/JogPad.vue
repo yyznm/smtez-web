@@ -91,7 +91,7 @@ function goPark() {
 
 .pad-btn:active {
   background: var(--accent-soft);
-  border-color: rgba(255, 176, 32, 0.4);
+  border-color: var(--accent-line);
   color: var(--accent);
 }
 
@@ -109,7 +109,7 @@ function goPark() {
   grid-area: 2 / 2;
   color: var(--accent);
   background: var(--accent-soft);
-  border-color: rgba(255, 176, 32, 0.32);
+  border-color: var(--accent-line);
 }
 
 .pad-home .pad-key {

@@ -176,7 +176,7 @@ export const useMachineStore = defineStore('machine', () => {
 
   /** 当前相机的失败原因；没有画面时界面直接提示 */
   const cameraError = computed(
-    () => cameraFailures[cameraId.value] ?? (database.connected ? null : '服务站未连接'),
+    () => cameraFailures[cameraId.value] ?? (database.connected ? null : '贴片机未连接'),
   )
 
   /* ---------------- 速度：本地即时反馈 + 防抖写库 ---------------- */

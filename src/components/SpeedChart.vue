@@ -13,9 +13,15 @@ const props = defineProps<{ samples: SpeedSample[] }>()
 const el = ref<HTMLElement | null>(null)
 let chart: ReturnType<typeof init> | null = null
 
-const AXIS_LINE = '#253040'
-const AXIS_TEXT = '#62728a'
-const GRID_LINE = '#1a222d'
+/* 与 tokens.css 的主题保持一致（ECharts 需要具体色值） */
+const AXIS_LINE = '#26262d'
+const AXIS_TEXT = '#666d7a'
+const GRID_LINE = '#1b1b20'
+const TOOLTIP_BG = '#141418'
+const TOOLTIP_TEXT = '#eceff3'
+const SERIES_PROGRESS = '#1fbf72'
+const SERIES_SPEED = '#4c9aff'
+const SERIES_REJECT = '#ff5b5f'
 
 function buildOption() {
   const list = props.samples
@@ -32,9 +38,9 @@ function buildOption() {
     },
     tooltip: {
       trigger: 'axis',
-      backgroundColor: '#141b25',
+      backgroundColor: TOOLTIP_BG,
       borderColor: AXIS_LINE,
-      textStyle: { color: '#e8eef7', fontSize: 11 },
+      textStyle: { color: TOOLTIP_TEXT, fontSize: 11 },
       axisPointer: { lineStyle: { color: AXIS_LINE } },
     },
     xAxis: {
@@ -49,7 +55,6 @@ function buildOption() {
       {
         type: 'value',
         min: 0,
-        max: 10,
         splitLine: { lineStyle: { color: GRID_LINE } },
         axisLabel: { color: AXIS_TEXT, fontSize: 10 },
       },
@@ -70,8 +75,8 @@ function buildOption() {
         data: list.map((item) => item.progress),
         smooth: true,
         showSymbol: false,
-        lineStyle: { width: 1.6, color: '#3ddc97' },
-        itemStyle: { color: '#3ddc97' },
+        lineStyle: { width: 1.6, color: SERIES_PROGRESS },
+        itemStyle: { color: SERIES_PROGRESS },
       },
       {
         name: '速度',
@@ -80,8 +85,8 @@ function buildOption() {
         data: list.map((item) => item.speed),
         smooth: true,
         showSymbol: false,
-        lineStyle: { width: 1.6, color: '#4c9aff' },
-        itemStyle: { color: '#4c9aff' },
+        lineStyle: { width: 1.6, color: SERIES_SPEED },
+        itemStyle: { color: SERIES_SPEED },
         areaStyle: { color: 'rgba(76, 154, 255, 0.12)' },
       },
       {
@@ -90,7 +95,7 @@ function buildOption() {
         yAxisIndex: 0,
         data: list.map((item) => item.reject),
         barWidth: 5,
-        itemStyle: { color: '#ff5b5f', borderRadius: [2, 2, 0, 0] },
+        itemStyle: { color: SERIES_REJECT, borderRadius: [2, 2, 0, 0] },
       },
     ],
   }

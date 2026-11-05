@@ -15,13 +15,33 @@ const STORAGE_KEY = 'smt.ws.url'
 /** 单条读取请求的超时时间 */
 const READ_TIMEOUT = 5000
 const LOG_LIMIT = 40
-/** 已由其他模块消费的事件（位置上报、设备状态、机器消息由 machine store 处理），不计入未识别日志 */
-const CONSUMED_EVENTS = new Set(['PostionChange', 'status', 'msg'])
+/** 已由其他模块消费的事件（位置/设备状态/消息由 machine 处理，Counter 由 overview 处理），不计入未识别日志 */
+const CONSUMED_EVENTS = new Set(['PostionChange', 'status', 'msg', 'Counter'])
 
+/** 未填端口时使用的默认端口 */
+export const DEFAULT_PORT = 9002
+
+/**
+ * 默认地址：优先取环境变量；否则用当前页面地址的 IP 加默认端口
+ * （页面本身就由贴片机上的插件服务提供，当前 IP 通常就是贴片机地址）
+ */
 function defaultUrl(): string {
   const override = import.meta.env.VITE_WS_URL
   if (typeof override === 'string' && override) return override
-  return `ws://10.0.0.141:9002/`
+  const host = window.location.hostname
+  return host ? `${host}:${DEFAULT_PORT}` : ''
+}
+
+/** 只填 ip 或 ip:端口 也能连：连接时补上缺失的 ws:// 与默认端口 */
+function normalizeUrl(input: string): string {
+  const raw = input.trim()
+  if (!raw) return ''
+  const withScheme = /^wss?:\/\//i.test(raw) ? raw : `ws://${raw}`
+  const matched = /^(wss?):\/\/([^/?#]+)(.*)$/i.exec(withScheme)
+  if (!matched) return withScheme
+  const [, scheme, hostPort, rest] = matched
+  const host = /:\d+$/.test(hostPort) ? hostPort : `${hostPort}:${DEFAULT_PORT}`
+  return `${scheme}://${host}${rest}`
 }
 
 interface PendingRead {
@@ -43,6 +63,10 @@ export const useDatabaseStore = defineStore('database', () => {
   const data = ref<Record<string, unknown>>({})
   const origin = ref<DatabaseOrigin>('none')
   const url = ref(defaultUrl())
+  /** 设置里原样保存用户填写的内容，连接时才拼接缺失的参数 */
+  const address = ref(defaultUrl())
+  /** init 是否已执行完（读过本地存储），界面可据此判断地址是否真的为空 */
+  const ready = ref(false)
   const connection = ref<WsStatusDetail>({ status: 'idle', url: '', retries: 0 })
   const syncState = ref<SyncState>('idle')
   /** 最近的数据变更（事件监听结果） */
@@ -148,14 +172,16 @@ export const useDatabaseStore = defineStore('database', () => {
 
   /* ---------------- 连接 ---------------- */
 
-  function connect(target = url.value) {
-    const value = target.trim()
-    console.log('[database] 连接', value)
-    if (!value) return
-    url.value = value
-    window.localStorage.setItem(STORAGE_KEY, value)
+  function connect(target = address.value) {
+    const raw = target.trim()
+    if (!raw) return
+    // 用户填什么就存什么，只有建立连接时才补全缺失的协议与端口
+    address.value = raw
+    url.value = normalizeUrl(raw)
+    window.localStorage.setItem(STORAGE_KEY, raw)
+    console.log('[database] 连接', url.value)
     syncState.value = 'syncing'
-    wsClient.connect(value)
+    wsClient.connect(url.value)
   }
 
   function disconnect() {
@@ -196,7 +222,11 @@ export const useDatabaseStore = defineStore('database', () => {
     initialized = true
 
     const stored = window.localStorage.getItem(STORAGE_KEY)
-    if (stored) url.value = stored
+    if (stored) {
+      // 存的是用户填写的原文，连接用的完整地址在这里补全
+      address.value = stored
+      url.value = normalizeUrl(stored)
+    }
 
     wsClient.onStatus((detail) => {
       connection.value = detail
@@ -205,18 +235,21 @@ export const useDatabaseStore = defineStore('database', () => {
     })
 
     wsClient.onMessage(handleMessage)
+    ready.value = true
   }
 
   return {
     data,
     origin,
     url,
+    ready,
     connection,
     syncState,
     patchLog,
     eventLog,
     connected,
     dataVersion,
+    address,
     get,
     getNumber,
     getString,

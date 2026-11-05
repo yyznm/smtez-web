@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useMachineStore } from '@/stores/machine'
 import AppIcon from './AppIcon.vue'
@@ -49,6 +49,21 @@ function run(action: ActionItem) {
   showActions.value = false
 }
 
+/**
+ * 点面板之外的任何地方（含顶部菜单、状态条）都收起操作面板，
+ * 且不拦截这次点击，被点到的控件照常响应。
+ */
+function onDocumentPointerDown(event: PointerEvent) {
+  if (!showActions.value) return
+  const target = event.target as HTMLElement | null
+  // 面板内的按钮、导航栏上的「操作」开关自己处理开合
+  if (target?.closest('.sheet, .tabbar')) return
+  showActions.value = false
+}
+
+onMounted(() => document.addEventListener('pointerdown', onDocumentPointerDown, true))
+onBeforeUnmount(() => document.removeEventListener('pointerdown', onDocumentPointerDown, true))
+
 // 切页时收起面板
 watch(() => route.path, () => {
   showActions.value = false
@@ -57,14 +72,14 @@ watch(() => route.path, () => {
 
 <template>
   <div class="tabbar-root">
-    <!-- 遮罩在导航栏之下，导航栏保持正常可用 -->
+    <!-- 遮罩只做视觉压暗，不拦截点击，顶部菜单仍可操作 -->
     <Transition name="fade">
-      <div v-if="showActions" class="backdrop" @click="showActions = false" />
+      <div v-if="showActions" class="backdrop" />
     </Transition>
 
     <!-- 操作面板从导航栏背后升起 -->
     <Transition name="sheet">
-      <div v-if="showActions" class="panel">
+      <div v-if="showActions" class="sheet">
         <div class="actions">
           <button
             v-for="action in ACTIONS"
@@ -88,12 +103,13 @@ watch(() => route.path, () => {
         replace
         class="tab"
         :class="{ 'is-active': route.path === item.to }"
+        @click="showActions = false"
       >
         <AppIcon :name="item.icon" :size="20" />
         <span class="tab-label">{{ item.label }}</span>
       </RouterLink>
 
-      <button class="tab" :class="{ 'is-active': showActions }" @click="showActions = !showActions">
+      <button class="tab tab-action" :class="{ 'is-active': showActions }" @click="showActions = !showActions">
         <AppIcon name="sliders" :size="20" />
         <span class="tab-label">操作</span>
       </button>
@@ -106,10 +122,11 @@ watch(() => route.path, () => {
   position: fixed;
   inset: 0;
   z-index: 89;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.3);
+  pointer-events: none;
 }
 
-.panel {
+.sheet {
   position: fixed;
   left: 0;
   right: 0;
@@ -141,10 +158,12 @@ watch(() => route.path, () => {
   background: var(--surface);
   font-size: 12px;
   font-weight: 600;
+  transition: background 0.15s, transform 0.1s;
 }
 
 .action:active {
   background: var(--surface-3);
+  transform: scale(0.97);
 }
 
 .action.is-ok {
@@ -191,6 +210,30 @@ watch(() => route.path, () => {
 
 .tab.is-active {
   color: var(--accent);
+}
+
+/* 操作按钮：宽 1.5 倍，占满导航栏高度，直角 */
+.tab-action {
+  flex: none;
+  width: 81px;
+  height: 100%;
+  border-radius: 0;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-deep) 100%);
+  color: #fff;
+  font-weight: 650;
+  box-shadow: 0 4px 14px rgba(31, 191, 114, 0.28);
+  transition: filter 0.15s, transform 0.1s, box-shadow 0.15s;
+}
+
+.tab-action:active {
+  transform: scale(0.97);
+  filter: brightness(0.95);
+}
+
+.tab-action.is-active {
+  color: #fff;
+  filter: brightness(1.05);
+  box-shadow: 0 4px 18px rgba(31, 191, 114, 0.42);
 }
 
 .sheet-enter-active,

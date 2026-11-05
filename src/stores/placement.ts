@@ -31,6 +31,8 @@ export interface PartView {
   side: string
   enable: boolean
   status: string
+  /** status 为 done 表示贴装完成 */
+  done: boolean
   /** 机器坐标（元件 data 字段），缺失时无法定位 */
   machineX: number | null
   machineY: number | null
@@ -103,16 +105,19 @@ export const usePlacementStore = defineStore('placement', () => {
 
   /* ---------------- 元件 ---------------- */
 
-  /** 当前子板的元件 */
+  /** 当前子板的元件（hide 为 true、与板面 Side 不一致的不显示） */
   const parts = computed<PartView[]>(() => {
     const board = boardAt(activeIndex.value)
     const childIndex = activeChild.value
     const list = board?.allchildparts?.[childIndex]?.allparts
     if (!list) return []
+    const boardSide = board?.Side ?? ''
 
-    return list.map((part, partIndex) => {
+    return list.flatMap<PartView>((part, partIndex) => {
+      if (part.hide) return []
+      if (boardSide && part.Side && part.Side !== boardSide) return []
       const position = (part.data ?? {}) as { x?: unknown; y?: unknown }
-      return {
+      return [{
         path: `/boards/${activeIndex.value}/allchildparts/${childIndex}/allparts/${partIndex}`,
         childIndex,
         ref: part.Ref ?? '',
@@ -125,9 +130,10 @@ export const usePlacementStore = defineStore('placement', () => {
         side: part.Side ?? '',
         enable: Boolean(part.enable),
         status: part.status ?? '',
+        done: part.status === 'done',
         machineX: typeof position.x === 'number' ? position.x : null,
         machineY: typeof position.y === 'number' ? position.y : null,
-      }
+      }]
     })
   })
 

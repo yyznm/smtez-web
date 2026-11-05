@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
+    "build:dll": "powershell -ExecutionPolicy Bypass -File server/build.ps1",
     "typecheck": "vue-tsc --noEmit",
     "preview": "vite preview"
   },

@@ -136,6 +136,7 @@ input {
   gap: 8px;
   height: 42px;
   padding: 0 10px 0 12px;
+  background: var(--bg-2);
   border-bottom: 1px solid var(--line);
 }
 
@@ -193,7 +194,7 @@ input {
 .icon-btn.is-active {
   color: var(--accent);
   background: var(--accent-soft);
-  border-color: rgba(255, 176, 32, 0.28);
+  border-color: var(--accent-line);
 }
 
 .icon-btn:disabled {
@@ -229,10 +230,9 @@ input {
 }
 
 .seg-item.is-active {
-  background: var(--surface-3);
-  color: var(--text);
+  background: var(--accent-soft);
+  color: var(--accent);
   font-weight: 600;
-  box-shadow: inset 0 0 0 1px var(--line-2);
 }
 
 /* ---------- 小标签 ---------- */
@@ -298,6 +298,9 @@ input {
   --van-tabbar-background: var(--surface);
   --van-tabbar-item-active-color: var(--accent);
   --van-tabbar-item-text-color: var(--text-2);
+  --van-switch-on-background: var(--accent);
+  --van-checkbox-checked-icon-color: var(--accent);
+  --van-popup-background: var(--surface);
 }
 
 .van-config-provider {

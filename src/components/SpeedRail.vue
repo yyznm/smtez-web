@@ -93,6 +93,7 @@ function onUp() {
 .rail-title {
   font-size: 11px;
   color: var(--text-3);
+  text-align: right;
 }
 
 .rail-value {
@@ -100,6 +101,7 @@ function onUp() {
   font-weight: 650;
   color: var(--accent);
   line-height: 1.1;
+  text-align: right;
 }
 
 .rail-value i {

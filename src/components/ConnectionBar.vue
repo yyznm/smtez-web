@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { showFailToast } from 'vant'
+import 'vant/es/toast/style'
 import AppIcon from './AppIcon.vue'
-import { useDatabaseStore } from '@/stores/database'
+import { DEFAULT_PORT, useDatabaseStore } from '@/stores/database'
 import { useMachineStore } from '@/stores/machine'
 
 const database = useDatabaseStore()
 const machine = useMachineStore()
 
 const showPanel = ref(false)
-const draft = ref(database.url)
+/** 设置里显示的地址：原样保存用户填写的内容 */
+const draft = ref(database.address)
 
 const STATUS_TEXT: Record<string, string> = {
   idle: '未连接',
@@ -24,9 +27,14 @@ const STATUS_TONE: Record<string, string> = {
   closed: 'is-danger',
 }
 
-const statusText = computed(() => STATUS_TEXT[database.connection.status] ?? '未连接')
-const tone = computed(() => STATUS_TONE[database.connection.status] ?? '')
-const originText = computed(() => (database.origin === 'remote' ? '远端数据库' : '无数据'))
+const statusText = computed(() => {
+  if (!database.url) return '未设置地址'
+  return STATUS_TEXT[database.connection.status] ?? '未连接'
+})
+const tone = computed(() => {
+  if (!database.url) return 'is-warn'
+  return STATUS_TONE[database.connection.status] ?? ''
+})
 const syncText = computed(() => {
   switch (database.syncState) {
     case 'syncing':
@@ -40,18 +48,34 @@ const syncText = computed(() => {
   }
 })
 
-function formatValue(value: unknown): string {
-  if (value === undefined) return ''
-  const text = typeof value === 'string' ? value : JSON.stringify(value)
-  return text.length > 40 ? `${text.slice(0, 40)}…` : text
-}
-
 function openPanel() {
-  draft.value = database.url
+  draft.value = database.address
   showPanel.value = true
 }
 
+/** 数据库初始化完成（读过本地存储）后仍没有地址，就直接把设置面板打开 */
+watch(
+  () => database.ready,
+  (isReady) => {
+    if (isReady && !database.address) openPanel()
+  },
+  { immediate: true },
+)
+
+/** 连接失败（含掉线）时弹提示并打开设置面板；自动重连的后续失败不再重复打扰 */
+watch(
+  () => database.connection.status,
+  (status) => {
+    if (status !== 'closed' || database.connection.retries > 0) return
+    // zIndex 抬高，避免被随后打开的设置面板遮住
+    showFailToast({ message: '连接失败，请检查贴片机地址与设置', duration: 3000, zIndex: 5000 })
+    openPanel()
+  },
+)
+
 function apply() {
+  // 只填 ip / ip:端口 也能连，补全逻辑在 store 里
+  if (!draft.value.trim()) return
   database.connect(draft.value)
   showPanel.value = false
 }
@@ -92,48 +116,36 @@ function syncNow() {
 
     <div class="panel-body">
       <div class="field">
-        <span class="field-label">服务站地址</span>
-        <input v-model="draft" class="field-input num" placeholder="ws://192.168.1.20:8080" />
+        <span class="field-label">贴片机地址</span>
+        <input v-model="draft" class="field-input num" placeholder="192.168.1.20" />
+      </div>
+      <p v-if="!draft.trim()" class="hint is-warn">还没设置贴片机地址，填写后点「连接」，默认端口 {{ DEFAULT_PORT }}</p>
+      <p v-else class="hint is-warn">填写完成后点「连接」，默认端口 {{ DEFAULT_PORT }}</p>
+      <div class="notice">
+        <p class="notice-title">连接前请先在贴片机设置中打开：</p>
+        <ul class="notice-list">
+          <li>启用基于网络的插件端口</li>
+          <li>允许广域网访问插件端口</li>
+          <li>不检查连接插件端口的 IP</li>
+        </ul>
+        <p class="notice-note">
+          这些设置有几率不生效，试试重启smtez，也不知道是谁的问题 (/▽＼)
+        </p>
+        <p class="notice-note">
+          未打开「不检查连接插件端口的 IP」时，需在弹出的连接提示中手动允许后再刷新页面才能完成连接。
+        </p>
       </div>
       <div class="actions">
         <button class="btn is-primary" @click="apply">连接</button>
-        <button class="btn" @click="syncNow">同步数据库</button>
+        <button class="btn" @click="syncNow">手动同步数据</button>
         <button class="btn" @click="disconnect">断开</button>
       </div>
 
       <div class="meta">
         <span>状态 {{ statusText }}</span>
-        <span>来源 {{ originText }}</span>
         <span>重连 {{ database.connection.retries }}</span>
       </div>
       <p v-if="database.connection.error" class="error">{{ database.connection.error }}</p>
-
-      <div class="section-header">
-        <span>数据库变更</span>
-        <span class="dim">{{ database.patchLog.length }} 条</span>
-      </div>
-      <ul class="log">
-        <li v-for="(record, index) in database.patchLog" :key="`${record.at}-${index}`" class="log-item">
-          <span class="chip" :class="record.from === 'remote' ? 'is-info' : 'is-accent'">
-            {{ record.from === 'remote' ? '远端' : '本地' }}
-          </span>
-          <span class="log-path num">{{ record.path }}</span>
-          <span class="log-value num">{{ formatValue(record.value) }}</span>
-        </li>
-        <li v-if="!database.patchLog.length" class="log-empty">暂无变更</li>
-      </ul>
-
-      <div class="section-header">
-        <span>未识别事件</span>
-        <span class="dim">{{ database.eventLog.length }} 条</span>
-      </div>
-      <ul class="log is-event">
-        <li v-for="(record, index) in database.eventLog" :key="`${record.at}-${index}`" class="log-item">
-          <span class="chip is-warn">{{ record.event }}</span>
-          <span class="log-value num">{{ formatValue(record.payload) }}</span>
-        </li>
-        <li v-if="!database.eventLog.length" class="log-empty">暂无</li>
-      </ul>
     </div>
   </van-popup>
 </template>
@@ -258,6 +270,71 @@ function syncNow() {
   margin-top: 10px;
 }
 
+.hint {
+  margin: 10px 0 0;
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--text-3);
+}
+
+.hint.is-warn {
+  color: var(--warn);
+}
+
+/* 连接前置条件：左侧强调条的说明卡片 */
+.notice {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--accent-line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+
+.notice-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.notice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notice-list li {
+  position: relative;
+  padding-left: 12px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+.notice-list li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 7px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.notice-note {
+  margin: 8px 0 0;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line-2);
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--text-3);
+}
+
 .btn {
   flex: 1;
   height: 36px;
@@ -285,71 +362,5 @@ function syncNow() {
   margin: 8px 0 0;
   font-size: 11px;
   color: var(--danger);
-}
-
-.section-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin: 16px 0 6px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-3);
-}
-
-.log {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  overflow: hidden;
-  background: var(--surface);
-}
-
-.log-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  border-bottom: 1px solid var(--line);
-  font-size: 11px;
-}
-
-.log-item:last-child {
-  border-bottom: 0;
-}
-
-.log-path {
-  flex: 1;
-  min-width: 0;
-  color: var(--text-2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.log-value {
-  flex: 1;
-  max-width: 45%;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* 未识别事件没有路径列，事件内容占满整行 */
-.log.is-event .log-value {
-  flex: 1;
-  max-width: none;
-}
-
-.log-empty {
-  padding: 12px;
-  text-align: center;
-  font-size: 11px;
-  color: var(--text-3);
 }
 </style>

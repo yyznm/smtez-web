@@ -67,7 +67,10 @@ const AUX: { id: string; icon: IconName; label: string; active: () => boolean; r
           :streaming="machine.cameraActive"
           @update:model-value="machine.setNozzle"
         />
-        <span class="chip">步进 {{ machine.step }}mm</span>
+        <div class="chips">
+          <span class="chip">步进 {{ machine.step }}mm</span>
+          <span class="chip">速度 {{ machine.speed }}%</span>
+        </div>
       </div>
 
       <div class="aux-row">
@@ -113,7 +116,10 @@ const AUX: { id: string; icon: IconName; label: string; active: () => boolean; r
   gap: 8px;
 }
 
-.nozzle-row .chip {
+.nozzle-row .chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   margin-left: auto;
   flex: none;
 }
@@ -146,7 +152,7 @@ const AUX: { id: string; icon: IconName; label: string; active: () => boolean; r
 .aux-btn.is-active {
   color: var(--accent);
   background: var(--accent-soft);
-  border-color: rgba(255, 176, 32, 0.32);
+  border-color: var(--accent-line);
 }
 
 .aux-label {

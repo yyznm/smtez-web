@@ -6,7 +6,7 @@ import CameraView from './CameraView.vue'
 const machine = useMachineStore()
 
 /** 三档宽度：屏幕宽度的 25% / 50% / 95% */
-const RATIOS = [0.25, 0.5, 0.95] as const
+const RATIOS = [0.33, 0.55, 0.95] as const
 const MARGIN = 12
 /** 导航栏高度 + 间距，小窗默认停在它上面 */
 const BOTTOM_OFFSET = 54 + 12
@@ -123,7 +123,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', onResize))
   border-radius: var(--r-md);
   overflow: hidden;
   border: 1px solid var(--line-2);
-  background: #05070a;
+  background: #050506;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
   touch-action: none;
 }
