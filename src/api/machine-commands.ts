@@ -72,9 +72,19 @@ export const machineCommands = {
     wsClient.send({ cmd: 'move', home: true, force })
   },
 
+  /** 飞达前进 / 后退：f 为 1 前进，-1 后退，id 为飞达编号 */
+  feederMove(id: number, f: 1 | -1) {
+    wsClient.send({ cmd: 'move', type: 'feeder', f, id })
+  },
+
+  /** 吸嘴绝对移动到指定坐标 */
+  moveNozzleToPosition(nozzle: number, x: number, y: number) {
+    wsClient.send({ cmd: 'task', task: 'nozzleToPosition', id: nozzle, pos: { x, y } })
+  },
+
   /** 数据库值设置 */
   setDatabase(value: DatabasePatch[]) {
-    wsClient.send({ cmd: 'database', value })
+    return wsClient.send({ cmd: 'database', value })
   },
 
   /** 主动获取数据库值 */

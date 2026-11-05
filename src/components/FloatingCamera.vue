@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useMachineStore } from '@/stores/machine'
+import { useCameraWindowStore } from '@/stores/camera-window'
 import CameraView from './CameraView.vue'
 
 const machine = useMachineStore()
+const cameraWindow = useCameraWindowStore()
 
 /** 三档宽度：屏幕宽度的 25% / 50% / 95% */
 const RATIOS = [0.33, 0.55, 0.95] as const
 const MARGIN = 12
+/** 停靠到弹窗上方时与弹窗的间距 */
+const DOCK_GAP = 10
 /** 导航栏高度 + 间距，小窗默认停在它上面 */
 const BOTTOM_OFFSET = 54 + 12
 /** 指针移动小于该距离视为点击（切换大小） */
@@ -85,8 +89,63 @@ function cycleSize() {
 function onResize() {
   viewport.width = window.innerWidth
   viewport.height = window.innerHeight
+  const anchor = cameraWindow.anchor
+  if (anchor?.mode === 'dock') {
+    apply((viewport.width - width.value) / 2, anchor.top - height.value - DOCK_GAP)
+    return
+  }
   apply(position.x, position.y)
 }
+
+interface Snapshot {
+  ratio: number
+  x: number
+  y: number
+}
+
+function snapshot(): Snapshot {
+  return { ratio: ratioIndex.value, x: position.x, y: position.y }
+}
+
+function restore(state: Snapshot) {
+  ratioIndex.value = state.ratio
+  apply(state.x, state.y)
+}
+
+/** 打开弹窗前的状态，关闭弹窗时恢复 */
+let base: Snapshot | null = null
+/** 展开控制贴片机前的状态，收起时恢复 */
+let beforeZoom: Snapshot | null = null
+
+watch(
+  () => cameraWindow.anchor,
+  (anchor) => {
+    if (!anchor) {
+      beforeZoom = null
+      if (base) {
+        restore(base)
+        base = null
+      }
+      return
+    }
+    if (anchor.mode === 'dock') {
+      if (!beforeZoom) beforeZoom = snapshot()
+      ratioIndex.value = RATIOS.length - 1
+      apply((viewport.width - width.value) / 2, anchor.top - height.value - DOCK_GAP)
+      return
+    }
+    if (anchor.mode === 'relax') {
+      if (!beforeZoom) return
+      restore(beforeZoom)
+      beforeZoom = null
+      return
+    }
+    // avoid：打开弹窗前的位置只记一次，被挡住才飞上去，大小不变
+    if (!base) base = snapshot()
+    if (position.y + height.value + DOCK_GAP <= anchor.top) return
+    apply(position.x, anchor.top - height.value - DOCK_GAP)
+  },
+)
 
 onMounted(() => {
   resetPosition()
@@ -119,7 +178,8 @@ onBeforeUnmount(() => window.removeEventListener('resize', onResize))
 <style scoped>
 .floating {
   position: fixed;
-  z-index: 80;
+  /* 要盖在 Vant 弹窗（默认 2000）之上 */
+  z-index: 2500;
   border-radius: var(--r-md);
   overflow: hidden;
   border: 1px solid var(--line-2);

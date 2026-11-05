@@ -15,6 +15,33 @@ const MAX_QUEUE = 100
 const MAX_DELAY = 10000
 
 /**
+ * 上位机按 JSON 字面区分 int / double：整数值会被当成 int，
+ * 飞达的坐标 / 尺寸 / 角度 / 高度这些字段要求小数，序列化时补成 0.0 / -14.0 形式。
+ */
+const FEEDER_FLOAT_PATTERN =
+  /"(part_0_r|part_0_z|part_r|part_z|pos_0_[xyz]|pos_[123]_[xyz]|tmp_pos0_[12]_[xyz]|feederz|pr|[xyzwrh])":(-?\d+)(?=[,}])/g
+const FLOAT_FIELD_PATTERN =
+  /"(part_0_r|part_0_z|part_r|part_z|pos_1_z|pos_2_z|pos_3_z)":(-?\d+)(?=[,}])/g
+
+/** 是否飞达相关的数据库补丁：新增 `/feeders/-` 或改 `/feeders/<i>/...` */
+function isFeederPatch(payload: unknown): boolean {
+  if (!payload || typeof payload !== 'object') return false
+  const value = (payload as { value?: unknown }).value
+  if (!Array.isArray(value)) return false
+  return value.some(
+    (item) =>
+      typeof (item as { path?: unknown })?.path === 'string' &&
+      /^\/feeders(\/|$)/.test((item as { path: string }).path),
+  )
+}
+
+function stringify(payload: unknown): string {
+  const text = JSON.stringify(payload)
+  const pattern = isFeederPatch(payload) ? FEEDER_FLOAT_PATTERN : FLOAT_FIELD_PATTERN
+  return text.replace(pattern, '"$1":$2.0')
+}
+
+/**
  * 与贴片机插件服务通信的 WebSocket 客户端。
  * - 文本帧：JSON 指令与事件
  * - 二进制帧：相机画面
@@ -94,7 +121,7 @@ export class WsClient {
 
   /** 发送 JSON 指令；未连接时入队等待重连 */
   send(payload: unknown): boolean {
-    const text = JSON.stringify(payload)
+    const text = stringify(payload)
     if (this.connected && this.#socket) {
       this.#socket.send(text)
       return true
