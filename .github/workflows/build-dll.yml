@@ -3,6 +3,7 @@ name: Build DLL
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
 
 concurrency:
   group: build-dll-${{ github.ref }}
