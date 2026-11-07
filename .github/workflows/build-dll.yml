@@ -32,13 +32,19 @@ jobs:
       - name: Build frontend and smtweb.dll
         run: powershell -ExecutionPolicy Bypass -File server/build.ps1
 
+      - name: Package plugin zip
+        shell: pwsh
+        run: |
+          $name = 'smtweb-plugin'
+          if ($env:GITHUB_REF_TYPE -eq 'tag') { $name = "smtweb-plugin-$env:GITHUB_REF_NAME" }
+          New-Item -ItemType Directory -Path package -Force | Out-Null
+          Compress-Archive -Path server/bin/smtweb.dll, server/bin/smtweb.plugin.json -DestinationPath "package/$name.zip" -Force
+
       - name: Upload plugin artifact
         uses: actions/upload-artifact@v4
         with:
           name: smtweb-plugin
-          path: |
-            server/bin/smtweb.dll
-            server/bin/smtweb.plugin.json
+          path: package/*.zip
           if-no-files-found: error
 
       - name: Publish release
@@ -46,4 +52,6 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create $env:GITHUB_REF_NAME server/bin/smtweb.dll server/bin/smtweb.plugin.json --title $env:GITHUB_REF_NAME --generate-notes
+        run: |
+          $zip = (Get-ChildItem package/*.zip).FullName
+          gh release create $env:GITHUB_REF_NAME $zip --title $env:GITHUB_REF_NAME --generate-notes
