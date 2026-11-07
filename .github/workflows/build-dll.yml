@@ -2,10 +2,7 @@ name: Build DLL
 
 on:
   push:
-    branches: [main]
     tags: ['v*']
-  pull_request:
-  workflow_dispatch:
 
 concurrency:
   group: build-dll-${{ github.ref }}
@@ -18,10 +15,10 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -41,7 +38,7 @@ jobs:
           Compress-Archive -Path server/bin/smtweb.dll, server/bin/smtweb.plugin.json -DestinationPath "package/$name.zip" -Force
 
       - name: Upload plugin artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: smtweb-plugin
           path: package/*.zip
