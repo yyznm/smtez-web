@@ -140,6 +140,12 @@ export const useDatabaseStore = defineStore('database', () => {
     machineCommands.setDatabase(patches)
   }
 
+  /** 只下发给机器，不本地应用：等机器回传 database 事件再更新本地 */
+  function send(patches: DatabasePatch[]): boolean {
+    if (!patches.length) return false
+    return machineCommands.setDatabase(patches)
+  }
+
   /* ---------------- 读取请求 ---------------- */
 
   function read(path: string): Promise<unknown> {
@@ -258,6 +264,7 @@ export const useDatabaseStore = defineStore('database', () => {
     applyPatches,
     set,
     setMany,
+    send,
     read,
     connect,
     disconnect,

@@ -4,6 +4,7 @@ export const ICON_PATHS = {
   'arrow-down': 'M12 5v14M19 12l-7 7-7-7',
   'arrow-left': 'M19 12H5M12 19l-7-7 7-7',
   'arrow-right': 'M5 12h14M12 5l7 7-7 7',
+  close: 'M6 6l12 12M18 6 6 18',
   'rotate-cw': 'M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8M21 3v5h-5',
   'rotate-ccw': 'M3 12a9 9 0 1 0 9-9c-2.52 0-4.93 1-6.74 2.74L3 8M3 3v5h5',
   bulb: 'M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5V18h8v-4.5A6 6 0 0 0 12 3Z',

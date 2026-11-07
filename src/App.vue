@@ -24,8 +24,10 @@ const offPatch = database.onPatch((record) => {
   if (record.path.startsWith('/cameras')) machine.syncCameraSizes()
 })
 
-// 暂时只在贴装页显示悬浮小窗（首页已有完整画面）
-const showFloatingCamera = computed(() => route.path === '/placement' && machine.cameraActive)
+// 悬浮小窗：贴装页与飞达页显示（首页已有完整画面）
+const showFloatingCamera = computed(
+  () => (route.path === '/placement' || route.path === '/feeders') && machine.cameraActive,
+)
 
 onMounted(() => {
   database.init()

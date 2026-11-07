@@ -19,6 +19,7 @@ interface TabItem {
 const TABS: TabItem[] = [
   { to: '/', label: '控制', icon: 'crosshair' },
   { to: '/placement', label: '贴装', icon: 'boards' },
+  { to: '/feeders', label: '飞达', icon: 'list' },
   { to: '/overview', label: '总览', icon: 'gauge' },
 ]
 

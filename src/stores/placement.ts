@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useDatabaseStore } from '@/stores/database'
-import type { DbBoard } from '@/types/database'
+import type { DatabasePatch, DbBoard } from '@/types/database'
 
 /** 元件列表筛选 */
 export type PartFilter = 'all' | 'enabled' | 'disabled'
@@ -33,9 +33,22 @@ export interface PartView {
   status: string
   /** status 为 done 表示贴装完成 */
   done: boolean
+  /** 注释 */
+  comments: string
+  /** 优先级（数据库 weight 字段） */
+  weight: number
   /** 机器坐标（元件 data 字段），缺失时无法定位 */
   machineX: number | null
   machineY: number | null
+}
+
+/** PCB 历史记录行（映射 /data/setting/PcbHistoryPath） */
+export interface PcbHistoryView {
+  index: number
+  path: string
+  name: string
+  lasttime: string
+  use: boolean
 }
 
 export const usePlacementStore = defineStore('placement', () => {
@@ -68,6 +81,22 @@ export const usePlacementStore = defineStore('placement', () => {
 
   const activeBoard = computed<BoardView | undefined>(() => boards.value[activeIndex.value])
   const enabledBoardCount = computed(() => boards.value.filter((board) => board.enable).length)
+
+  /* ---------------- 管理 PCB：/setting/PcbHistoryPath ---------------- */
+
+  const pcbHistory = computed<PcbHistoryView[]>(() =>
+    database
+      .get<{ name?: string; lasttime?: string; use?: boolean }[]>('/setting/PcbHistoryPath', [])
+      .map((item, index) => ({
+        index,
+        path: `/setting/PcbHistoryPath/${index}`,
+        name: item.name ?? '',
+        lasttime: item.lasttime ?? '',
+        use: Boolean(item.use),
+      })),
+  )
+
+  /** 使用状态只读：勾选请到 PC 端操作 */
 
   /* ---------------- 拼板设置：/{board}/setting ---------------- */
 
@@ -131,6 +160,8 @@ export const usePlacementStore = defineStore('placement', () => {
         enable: Boolean(part.enable),
         status: part.status ?? '',
         done: part.status === 'done',
+        comments: part.Comments ?? '',
+        weight: Number(part.weight) || 0,
         machineX: typeof position.x === 'number' ? position.x : null,
         machineY: typeof position.y === 'number' ? position.y : null,
       }]
@@ -165,6 +196,23 @@ export const usePlacementStore = defineStore('placement', () => {
     }
   })
 
+  /**
+   * 当前板实际用到的「元件=封装」集合（含全部拼版子板，跳过隐藏元件）。
+   * 飞达页用它给对应飞达加浅绿底，元件与封装必须同时匹配。
+   */
+  const usedFeederKeys = computed(() => {
+    const keys = new Set<string>()
+    boardAt(activeIndex.value)?.allchildparts.forEach((child) => {
+      child.allparts.forEach((part) => {
+        if (part.hide) return
+        const value = (part.Val ?? '').trim()
+        if (!value) return
+        keys.add(`${value}=${(part.Package ?? '').trim()}`)
+      })
+    })
+    return keys
+  })
+
   /* ---------------- 修改（统一走数据库 patch） ---------------- */
 
   function selectBoard(index: number) {
@@ -192,6 +240,17 @@ export const usePlacementStore = defineStore('placement', () => {
     database.set(`${path}/enable`, enabled)
   }
 
+  /** 编辑元件属性：一次改多个字段，统一走数据库 patch */
+  function updatePart(path: string, changes: Record<string, unknown>) {
+    database.setMany(
+      Object.entries(changes).map(([key, value]) => ({
+        op: 'replace' as const,
+        path: `${path}/${key}`,
+        value,
+      })),
+    )
+  }
+
   function setAllParts(enabled: boolean) {
     database.setMany(
       parts.value
@@ -200,12 +259,30 @@ export const usePlacementStore = defineStore('placement', () => {
     )
   }
 
+  /** 清除当前板所有元件的贴装状态（含隐藏元件与底面元件） */
+  function clearStatus() {
+    const board = boardAt(activeIndex.value)
+    const patches: DatabasePatch[] = []
+    board?.allchildparts.forEach((child, childIndex) => {
+      child.allparts.forEach((part, partIndex) => {
+        if (!part.status) return
+        patches.push({
+          op: 'replace',
+          path: `/boards/${activeIndex.value}/allchildparts/${childIndex}/allparts/${partIndex}/status`,
+          value: '',
+        })
+      })
+    })
+    database.setMany(patches)
+  }
+
   return {
     activeIndex,
     activeChild,
     activeBoard,
     boards,
     enabledBoardCount,
+    pcbHistory,
     arrayQty,
     arrayGap,
     panelGrid,
@@ -214,6 +291,7 @@ export const usePlacementStore = defineStore('placement', () => {
     parts,
     visibleParts,
     stats,
+    usedFeederKeys,
     filter,
     query,
     locateMode,
@@ -224,6 +302,8 @@ export const usePlacementStore = defineStore('placement', () => {
     selectPart,
     setBoardEnabled,
     setPartEnabled,
+    updatePart,
     setAllParts,
+    clearStatus,
   }
 })

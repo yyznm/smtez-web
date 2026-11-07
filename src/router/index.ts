@@ -16,6 +16,12 @@ const router = createRouter({
       meta: { title: '贴装' },
     },
     {
+      path: '/feeders',
+      name: 'feeders',
+      component: () => import('@/views/FeederView.vue'),
+      meta: { title: '飞达' },
+    },
+    {
       path: '/overview',
       name: 'overview',
       component: () => import('@/views/OverviewView.vue'),
